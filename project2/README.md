@@ -1,2 +1,4 @@
 # Titanic Survival Rate: the Mysterious Facts!
+![alt tag](https://i.ytimg.com/vi/rs9w5bgtJC8/maxresdefault.jpg)
+
 On April 15, 1912, the RMS Titanic was sunk after colliding with an iceberg. This shipwreck accident led to the deaths of 1502 out of 2224 passengers and crew at that time. One of the main reasons why the shipwreck led to such loss of life was that there were not enough lifeboats for everyone on the ship. The question remained till today is whether or not there were other factors which could potentially influence the survival rate of some groups versus the others besides luck. With the provided dataset for the RMS Ttitanic accident (titanic-data.csv), a full analysis can be completed to investigate these potential factors further using different visualization and data exploration techniques such as matplotlib, pandas, seaborn and numpy.
