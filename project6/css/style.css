@@ -1,0 +1,15 @@
+
+/*Remove grid lines from background */
+
+.tick line {
+  display: none;
+}
+
+/*Move svg to the center */
+
+svg {
+  display: block;
+  margin: auto;
+}
+
+div.content { width: 1000px }

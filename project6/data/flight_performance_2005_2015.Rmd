@@ -1,0 +1,249 @@
+---
+title: "Investigate flight performance of U.S. domestic carriers from 2005-2015"
+author: "Ivy Huong Nguyen"
+date: "March 30, 2017"
+output: html_document
+---
+##**INTRODUCTION**##
+
+In this project, a investigation of flight performance of all U.S. domestic carriers will be carried out. The dataset for this study contains information of all U.S. carriers regarding flight delays and performace. This dataset was obtained from the following link: https://www.transtats.bts.gov/OT_Delay/OT_DelayCause1.asp?pn=1, which includes data collected from January 2005 to January 2015. A detailed study will be focused on the top five carriers with the largest number of on-time flights and top five airlines with the largest number of delayed flights caused by different reasons. 
+
+##**DATA EXPLORATORY SECTION**##
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+
+options(scipen=999)
+
+#Import dataset as a dataframe
+flight <- read.csv("flight_performance.csv", header=T, check.names=F)
+```
+
+###**Data Structure**###
+
+```{r}
+#Get a summary of datatype and data info using summary and str
+str(flight)
+summary(flight)
+
+#Inspect the structure of the data using head(data)
+head(flight)
+```
+
+The dataset includes 22 different variables with 170077 observations for each variable. One variable in this dataset is actually an empty column with NA values and thus will need to be removed during the analysis. 
+
+```{r}
+flight <- flight[,colSums(is.na(flight))<nrow(flight)]
+```
+
+First I would like to know how many carriers are there in this dataset. In order to accomplish this, I count all the unique names in the carrier_name column, which then returns 24. 
+
+```{r}
+#Check how many carriers in this dataset
+carriers <- unique(flight$carrier_name)
+
+print(paste("There are", length(carriers), "carriers in this dataset."))
+```
+
+
+```{r}
+###Load necessary packages for data exploration and analysis###
+require(ggplot2)
+require(grid)
+require(scales)
+require(dplyr)
+require(gridExtra)
+library(RColorBrewer)
+library(ggthemes)
+```
+
+###**Generate new summary dataset**###
+
+First, I would like to establish a new summary dataframe which includes the information regarding the total number of arrivals, delayed flights, cancelled flights, and on-time flights that each carrier has by year. 
+
+```{r}
+flight_summary <- flight %>%
+  group_by(year, carrier_name) %>%
+  summarize(arrivals = sum(arr_flights), 
+             delayed = sum(arr_del15), 
+             cancelled = sum(arr_cancelled), 
+             diverted = sum(arr_diverted)) %>%
+  transform(on_time = 1 - delayed/arrivals) %>%
+  transform(delayed_percent = delayed/arrivals)
+```
+
+After obtaining the new flight summary dataframe, I realized there are numerous rows with NA values. I chose to remove all these rows since they basically do not have any information for evaluation. 
+
+```{r}
+#Remove all row with NA values from the flight_summary dataframe
+flight_summary <- na.omit(flight_summary)
+```
+
+After removing all rows with NA values, I finally got the new summary dataframe with non-NA values for 97 different carriers. 
+
+###**Line plot by year for each carrier**###
+
+```{r}
+ggplot(data = flight_summary, aes(x=year, y=on_time))+
+   scale_x_continuous(name = "Year", 
+                      breaks = seq(2005, 2015, 1))+
+   geom_line(aes(color=carrier_name))
+```
+
+The above line plot looks very busy and hard to follow for the audience. Because of that, I chose to focus on primarily two sets of top five airlines:
++ Top 5 airlines that have the average largest number of delayed flights in the past 10 years
++ Top 5 airlines that have the average largest number of on-time flights in the past 10 years
+
+Beyond that, I want to also focus on evaluating the performance of the top five airlines with the largest number of delayed flights in the past 10 years (2005-2015). To start this process, I have to make a new summary table which includes the average number of arrivals, cancelled flights, diverted flights, delayed flights for each carrier in the last 10 years. 
+
+```{r}
+#Make new dataset that includes the average number of arrivals
+#delayed flights, cancelled flights, and diverted flights and the proportion of 
+#on_time flights in the last 10 years by carrier
+
+flight_summary_average <- flight_summary %>%
+   group_by(carrier_name) %>%
+   summarize(ave_arrivals = mean(arrivals), 
+             ave_delayed = mean(delayed_percent), 
+             ave_cancelled = mean(cancelled),
+             ave_diverted = mean(diverted), 
+             ave_ontime = mean(on_time)) 
+```
+
+###**Bar plots for top  airlines**###
+
+``` {r}
+top_five_delayed <- flight_summary_average%>%
+   arrange(desc(ave_delayed))%>%
+   top_n(5, ave_delayed)
+
+top_five_ontime <- flight_summary_average%>%
+   arrange((desc(ave_ontime)))%>%
+   top_n(5, ave_ontime)
+```
+
+```{r}
+ggplot(data = top_five_delayed, aes(x=carrier_name, ave_delayed))+
+   geom_bar(stat = 'identity', position = 'dodge')+
+   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=.4))+
+   labs(x="carrier name", y='Average number of delayed flights')+
+   ggtitle("Average proportion of delayed flights from Jan 2005 to Jan 2015")
+
+ggplot(data = top_five_ontime, aes(x=carrier_name, y=ave_ontime))+
+   geom_bar(stat = 'identity', position = 'dodge')+
+   labs(x='carrier name', y='Average proportion of on-time flights')+
+   theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.4))+
+   ggtitle('Average proportion of on-time flights from Jan 2005 to Jan 2015')
+```
+
+Southwest airlines has the highest average number of delayed flights from 2005-2015. Aloha Airlines and Hawaian Airlines both have really high on-time proportion, 93% and 92% respectively. 
+
+###**Finding the most common delay cause**###
+
+```{r}
+#Subseting all data point related to airlines belonging to the top_five_delay list
+subset_delay <- filter(flight, 
+                        carrier_name %in%
+                           top_five_delayed[['carrier_name']])
+
+#Create new summary for each delay cause for each carrier
+delay_summary <- subset_delay %>%
+  group_by(carrier_name, year) %>%
+  summarize(arr_delay = sum(` arr_delay`), 
+            carrier_delay = sum(` carrier_delay`), 
+            weather_delay = sum(weather_delay), 
+            nas_delay = sum(nas_delay), 
+            security_delay = sum(security_delay), 
+            late_aircraft_delay = sum(late_aircraft_delay),
+            sum_delay = sum(` arr_delay`,` carrier_delay`,weather_delay,
+                           nas_delay,security_delay,late_aircraft_delay))%>%
+  transform(arr_delay_per = arr_delay/sum_delay,
+            carrier_delay_per = carrier_delay/sum_delay,
+            weather_delay_per = weather_delay/sum_delay,
+            nas_delay_per = nas_delay/sum_delay,
+            security_delay_per = security_delay/sum_delay,
+            late_aircraft_delay_per = late_aircraft_delay/sum_delay)
+
+#Remove NA rows from delay_summary dataset
+delay_summary <- na.omit(delay_summary)
+
+#Calcuate the average number of delayed flight by each category from 2005-2017
+average_delay_summary <- delay_summary %>%
+  group_by(carrier_name)%>%
+  summarize(arrival_delay = mean(arr_delay_per), 
+            carrier_delay = mean(carrier_delay_per), 
+            weather_delay = mean(weather_delay_per), 
+            nas_delay = mean(nas_delay_per), 
+            security_delay = mean(security_delay_per), 
+            late_aircraft_delay = mean(late_aircraft_delay_per))
+
+#Create grouped bar plots
+library(reshape2)
+
+average_delay_summary <- data.frame(average_delay_summary)
+average_delay_summary <- melt(average_delay_summary, 
+                              id.vars = "carrier_name")
+
+ggplot(data = average_delay_summary, 
+       aes(x=carrier_name, y=value, fill=variable))+
+  geom_bar(stat = 'identity', 
+           position = 'dodge',
+           aes(color = variable))+
+  theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.4))+
+  ggtitle("Comparison between different delay cause by carrier")+
+  labs(x="proportion",y="carrier_name")
+  
+```
+
+It appears that arrival delay and late aircraft delay are the two most common cause among these top five delayed airlines. Weather does not have a severe impact on delay for all airlines. 
+
+###**Evaluating the performance of all arlines in the top_five_delay list**###
+
+To further evaluate the performance of all airlines in the top_five_delayed list, I have subset all their info from the flight_summary dataset before generating any plots for the analysis. 
+
+```{r}
+#Subseting info for the top five airlines with the highest average number of 
+#delayed flights 
+subset_flight <- filter(flight_summary, 
+                        carrier_name %in%
+                           top_five_delayed[['carrier_name']])
+
+```
+
+```{r}
+p1 <- ggplot(data = subset_flight,
+       aes(x = year, y = on_time)) +
+   geom_line(aes(color = carrier_name)) +
+   scale_x_continuous(limits=c(2005, 2015), breaks=c(2005:2015))+
+   ggtitle('On-time proportion of 5 carriers with highest delayed flights')+
+   labs(x='year', y='on-time proportion')
+
+p2 <- ggplot(data = subset_flight,
+       aes(x = year, y = arrivals)) +
+   geom_line(aes(color = carrier_name)) +
+   scale_x_continuous(limits=c(2005, 2015), breaks=c(2005:2015))+
+   ggtitle('Total arrivals of 5 carriers with the highest delayed flights')+
+   labs(x='year', y='total arrivals')
+      
+grid.arrange(p1, p2, ncol = 1)
+```
+
+According to the two generated plots, its obvious that we don't have a lot of information regarding these five airlines and thus final conclusion cannot be draw from here. However, this missing-data fact could potentially explain their performance since it could mean that these airlines are still at their early stage of development. Thus, the percentage of their on-time is still high in comparison to the others. 
+
+##**CONCLUSION**##
+
+Through this data analysis, the following points can be made for the flight performance of year period from Jan 2005 to Jan 2015: 
+
++ The top five airlines with the largest proportion of on-time flights are: Aloha Airlines, Haiwaii Airlines, American Airlines, and American Eagles Airlines. 
++ The top five airlines with the largest proportion of delayed flights are: Envoy Air, Northwest Airlines, Spirit Airlines, Jet Blue, and Mesa Airlines. 
+
+Since there is not enough data collected to compare the performance of all airlines within the top_five_Delayed list, no conclusion was made for this section. 
+
+
+```{r}
+##Create new CSV
+write.csv(top_five_delayed, file="top_five_delay.csv", row.names = FALSE)
+write.csv(top_five_ontime, file="top_five_on_time.csv", row.names = FALSE)
+write.csv(average_delay_summary, file="most_common_delay_cause.csv", row.names = FALSE)
+```
+

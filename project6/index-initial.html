@@ -1,0 +1,132 @@
+<DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
+    <style>
+        svg {
+        display: block;
+        margin: auto;
+        }
+    </style>
+
+    <script type="text/javascript">
+    
+    /*Set global variables*/
+    "use strict";
+    var margin = 75;
+    var width = 1400 - margin; 
+    var height = 500 - margin; 
+    var fontsize = "12px";
+    var titlefont = "20px";
+    /*set up draw function for the top_five_delay list*/
+    function draw1(data){
+        
+        /*D3.js setup code */
+        var svg = d3.select("body")
+        .append("svg").attr("width", width).attr("height", height)
+        .append('g').attr('class','chart')
+        
+
+        /*Dimple.js setup code*/
+
+        var myChart = new dimple.chart(svg, data);
+        var x = myChart.addCategoryAxis("x", "carrier_name");
+        x.title = 'Carrier Name';
+        x.fontSize = fontsize;
+
+        var y = myChart.addMeasureAxis("y", "ave_delayed");
+        y.title = 'Average Number of Delayed Flights'
+        y.fontSize = fontsize;
+        y.tickFormat = '%';
+        myChart.addSeries(null, dimple.plot.bar);
+        myChart.draw();    
+
+        svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", margin/2)
+        .attr("text-anchor", "middle")  
+        .style("font-size", titlefont) 
+        .style("text-decoration", "bold")  
+        .text("Top Five Airlines with the Highest Average Number of Delayed Flights, 2005-2015");
+
+    }
+    /*set up draw function for the top_five_onetime list*/
+    function draw2(data){
+        
+        /*D3.js setup code */
+
+        var svg = d3.select("body")
+        .append("svg").attr("width", width).attr("height", height)
+        .append('g').attr('class','chart')
+
+        /*Dimple.js setup code*/
+
+        var myChart = new dimple.chart(svg, data);
+        var x = myChart.addCategoryAxis("x", "carrier_name");
+        x.fontSize = fontsize;
+        x.title = 'Carrier Name';
+
+        var y = myChart.addMeasureAxis("y", "ave_ontime");
+        y.title = 'Average percentage of on-time flights';
+        y.tickFormat = '%';
+        y.fontSize = fontsize;
+        myChart.addSeries(null, dimple.plot.bar);
+        myChart.draw();   
+
+        svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", margin/2)
+        .attr("text-anchor", "middle")  
+        .style("font-size", titlefont) 
+        .style("text-decoration", "bold")  
+        .text("Top Five Airlines with the Highest Average Percentage of On-time Flights, 2005-2015");   
+    }
+
+    /*set up draw function for the most_common_delay_cause list*/
+    function draw3(data){
+        
+        /*D3.js setup code */ 
+
+        var svg = d3.select("body")
+        .append("svg").attr("width", width).attr("height", height)
+        .append('g').attr('class','chart')
+
+        /*Dimple.js setup code*/
+
+        var myChart = new dimple.chart(svg, data);
+        var x = myChart.addCategoryAxis("x", ["carrier_name"]);
+        x.title = 'Carrier Name';
+        x.fontSize = fontsize;
+
+        var y = myChart.addMeasureAxis("y", "value");
+        y.title = 'The averaged number of flights';
+        y.fontSize = fontsize;
+        y.tickFormat = '%';
+        var series = myChart.addSeries("variable", dimple.plot.bar);
+        var legend = myChart.addLegend(width*0.65, 60, width*0.25, 60, 'right');
+        legend.fontSize = fontsize;
+        myChart.draw();
+
+        svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", margin/2)
+        .attr("text-anchor", "middle")  
+        .style("font-size", titlefont) 
+        .style("text-decoration", "bold")  
+        .text("Average Number of Delayed Flight by Different Cause, 2005-2015");  
+    }
+
+    </script>
+</head>
+<body>
+    <script type=text/Javascript>
+    /* Use D3 to load "most_common_delay_cause.csv" */
+    d3.csv("data/top_five_delay.csv", draw1)
+    d3.csv("data/top_five_on_time.csv", draw2)
+    d3.csv("data/most_common_delay_cause.csv", draw3)
+    </script>
+</body>
+</html>
+
