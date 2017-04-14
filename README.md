@@ -1,7 +1,7 @@
 # Data Analyst Nanodegree
 ![alt tag](https://github.com/HuongIvyNguyen/udacity-data-science/blob/master/data-analyst-certificate.png)
 
-This repository contains all the projects for the Udacity's [Data Analyst Nanodegree](https://www.udacity.com/course/data-analyst-nanodegree--nd002) that was completed on April 2017. 
+This repository contains all the projects for the Udacity's [Data Analyst Nanodegree](https://www.udacity.com/course/data-analyst-nanodegree--nd002).
 
 ## Projects:
 + Project 1: Analyzing the Stroop effect using descriptive and inferential statistics
